@@ -1,0 +1,82 @@
+<div class="flex h-screen bg-gray-50">
+  <!-- Sidebar -->
+  <nav class="app-sidebar">
+    <!-- Header con Logo -->
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">
+          <img src="assets/logo-agenda-salud.png" alt="AgendaSalud">
+        </div>
+        <h1 class="sidebar-logo-text">Agenda Salud</h1>
+      </div>
+    </div>
+    
+    <!-- Navigation -->
+    <div class="sidebar-nav custom-scrollbar">
+      <a routerLink="/professional/dashboard" routerLinkActive="active" class="nav-item">
+        <i class="fas fa-home"></i>
+        <span class="nav-text">Dashboard</span>
+      </a>
+      
+      <a routerLink="/professional/schedule" routerLinkActive="active" class="nav-item">
+        <i class="fas fa-calendar-alt"></i>
+        <span class="nav-text">Mi Agenda</span>
+      </a>
+      
+      <a routerLink="/professional/patients" routerLinkActive="active" class="nav-item">
+        <i class="fas fa-users"></i>
+        <span class="nav-text">Pacientes</span>
+      </a>
+      
+      <a routerLink="/professional/availability" routerLinkActive="active" class="nav-item">
+        <i class="fas fa-clock"></i>
+        <span class="nav-text">Disponibilidad</span>
+      </a>
+      
+      <a routerLink="/professional/profile" routerLinkActive="active" class="nav-item">
+        <i class="fas fa-user-md"></i>
+        <span class="nav-text">Mi Perfil</span>
+      </a>
+    </div>
+    
+    <!-- User Section -->
+    <div class="sidebar-user">
+      <div class="user-info">
+        <div class="user-avatar">
+          <span>{{ getUserInitials() }}</span>
+        </div>
+        <div class="user-details">
+          <p class="user-name">{{ currentUser?.fullName }}</p>
+          <p class="user-role">{{ getRoleDisplayName() }}</p>
+        </div>
+      </div>
+      
+      <button (click)="logout()" class="logout-btn">
+        <i class="fas fa-power-off"></i>
+        <span class="logout-text">Cerrar Sesión</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col">
+    <header class="bg-white border-b px-6 py-4">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">{{ currentPageTitle }}</h2>
+          <p class="text-sm text-gray-500 mt-1">{{ currentPageDescription }}</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <button class="relative p-2 text-gray-400 hover:text-gray-500 transition-colors">
+            <i class="fas fa-bell text-lg"></i>
+            <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-error-500 ring-2 ring-white"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+    
+    <main class="flex-1 p-6 overflow-y-auto custom-scrollbar">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

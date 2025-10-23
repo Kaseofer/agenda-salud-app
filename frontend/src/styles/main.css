@@ -1,0 +1,16 @@
+/* ============================================
+   AgendaSalud - Main Styles Entry Point
+   ============================================ */
+
+/* Font Import */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* Base System */
+@import './_variables.css';
+@import './_base.css';
+@import './_mixins.css';
+
+/* Components (los crearemos después) */
+ @import './components/_sidebar.css'; 
+ @import './components/_buttons.css'; 
+ @import './components/_cards.css'; 
