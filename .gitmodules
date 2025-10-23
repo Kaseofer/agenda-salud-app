@@ -1,0 +1,15 @@
+[submodule "services/auth-service"]
+	path = services/auth-service
+	url = https://github.com/Kaseofer/AS.AuthService.git
+[submodule "services/user-management-service"]
+	path = services/user-management-service
+	url = https://github.com/Kaseofer/AS.UserManagement.git
+[submodule "services/appointment-service"]
+	path = services/appointment-service
+	url = https://github.com/Kaseofer/AS.AppointmentSevice.git
+[submodule "services/notification-service"]
+	path = services/notification-service
+	url = https://github.com/Kaseofer/AS.NotificationService.git
+[submodule "shared/messaging"]
+	path = shared/messaging
+	url = https://github.com/Kaseofer/AS.Messaging.git

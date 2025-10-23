@@ -1,0 +1,285 @@
+version: '3.8'
+
+services:
+  # ========================================
+  # POSTGRES 17 - MICROSERVICIO AUTHENTICATION
+  # ========================================
+  postgres-authentication:
+    image: postgres:17-alpine 
+    container_name: postgres-authentication
+    environment:
+      POSTGRES_DB: security_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_authentication_data:/var/lib/postgresql/data
+    networks:
+      - agenda-salud-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d security_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-authentication-migration:
+    build:
+      context: ./services/auth-service
+      dockerfile: Infrastructure/Database/Dockerfile.init
+    environment:
+      - POSTGRES_HOST=postgres-authentication
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin123
+      - POSTGRES_DB=security_db
+    depends_on:
+      postgres-authentication:
+        condition: service_healthy
+    networks:
+      - agenda-salud-network
+
+  # ========================================
+  # POSTGRES 17 - MICROSERVICIO APPOINTMENT
+  # ========================================
+  postgres-appointments:
+    image: postgres:17-alpine 
+    container_name: postgres-appointments
+    environment:
+      POSTGRES_DB: appointments_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_appointments_data:/var/lib/postgresql/data
+    networks:
+      - agenda-salud-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d appointments_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-appointment-migration:
+    build:
+      context: ./services/appointment-service
+      dockerfile: Infrastructure/Database/Dockerfile.init
+    environment:
+      - POSTGRES_HOST=postgres-appointments
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin123
+      - POSTGRES_DB=appointments_db
+    depends_on:
+      postgres-appointments:
+        condition: service_healthy
+    networks:
+      - agenda-salud-network
+
+  # ========================================
+  # POSTGRES 17 - MICROSERVICIO USERMANAGEMENT
+  # ========================================
+  postgres-usermanagement:
+    image: postgres:17-alpine 
+    container_name: postgres-usermanagement
+    environment:
+      POSTGRES_DB: user_management_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_usermanagement_data:/var/lib/postgresql/data
+    networks:
+      - agenda-salud-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d user_management_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-usermanagement-migration:
+    build:
+      context: ./services/user-management-service
+      dockerfile: Infrastructure/Database/Dockerfile.init
+    environment:
+      - POSTGRES_HOST=postgres-usermanagement
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin123
+      - POSTGRES_DB=user_management_db
+    depends_on:
+      postgres-usermanagement:
+        condition: service_healthy
+    networks:
+      - agenda-salud-network
+
+  # ========================================
+  # MONGO 7 - MICROSERVICIO NOTIFICATION
+  # ========================================
+  mongodb-notifications:
+    image: mongo:7
+    container_name: mongodb-notifications
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: notificationsdb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_notifications_data:/data/db
+    networks:
+      - agenda-salud-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================
+  # RABBITMQ
+  # ========================================
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbitmq_management load_definitions "/etc/rabbitmq/definitions.json"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./services/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    networks:
+      - agenda-salud-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================
+  # MICROSERVICIOS
+  # ========================================
+  
+  # Auth Service
+  auth-api:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+      network: host 
+    container_name: auth_api
+    ports:
+      - "5001:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres-authentication;Port=5432;Database=security_db;Username=admin;Password=admin123;
+      - RabbitMQ__HostName=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__UserName=admin
+      - RabbitMQ__Password=admin123
+    depends_on:
+      postgres-authentication:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - agenda-salud-network
+    restart: unless-stopped
+
+  # Appointment Service
+  appointment-api:
+    build:
+      context: ./services/appointment-service
+      dockerfile: Dockerfile
+      network: host  
+    container_name: appointment_api
+    ports:
+      - "5002:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres-appointments;Port=5432;Database=appointments_db;Username=admin;Password=admin123;
+      - RabbitMQ__HostName=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__UserName=admin
+      - RabbitMQ__Password=admin123
+      - AuthService__BaseUrl=http://auth-api:8080
+    depends_on:
+      postgres-appointments:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-api:
+        condition: service_started
+    networks:
+      - agenda-salud-network
+    restart: unless-stopped
+
+  # User Management Service
+  usermanagement-api:
+    build:
+      context: ./services/user-management-service
+      dockerfile: Dockerfile
+      network: host 
+    container_name: usermanagement_api
+    ports:
+      - "5003:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres-usermanagement;Port=5432;Database=user_management_db;Username=admin;Password=admin123;
+      - RabbitMQ__HostName=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__UserName=admin
+      - RabbitMQ__Password=admin123
+      - AuthService__BaseUrl=http://auth-api:8080
+    depends_on:
+      postgres-usermanagement:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      auth-api:
+        condition: service_started
+    networks:
+      - agenda-salud-network
+    restart: unless-stopped
+
+  # Notification Service
+  notification-api:
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+      network: host 
+    container_name: notification_api
+    ports:
+      - "5004:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=mongodb://admin:admin123@mongodb-notifications:27017/notificationsdb?authSource=admin
+      - RabbitMQ__HostName=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__UserName=admin
+      - RabbitMQ__Password=admin123
+    depends_on:
+      mongodb-notifications:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - agenda-salud-network
+    restart: unless-stopped
+
+# ========================================
+# VOLUMES
+# ========================================
+volumes:
+  rabbitmq_data:
+  postgres_authentication_data:
+  postgres_appointments_data:
+  postgres_usermanagement_data:
+  mongodb_notifications_data:
+
+# ========================================
+# NETWORKS
+# ========================================
+networks:
+  agenda-salud-network:
+    driver: bridge
