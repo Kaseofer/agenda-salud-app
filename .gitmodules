@@ -4,3 +4,12 @@
 [submodule "shared/messaging"]
 	path = shared/messaging
 	url = https://github.com/Kaseofer/as-messaging.git
+[submodule "services/user-management-service"]
+	path = services/user-management-service
+	url = https://github.com/Kaseofer/as-usermanagement-service.git
+[submodule "services/appointment-service"]
+	path = services/appointment-service
+	url = https://github.com/Kaseofer/as-appointment-service.git
+[submodule "services/notification-service"]
+	path = services/notification-service
+	url = https://github.com/Kaseofer/as-notification-service.git
